@@ -22,7 +22,9 @@ while True:
 
     print(current_motion)
 
-    if current_motion.motion_in_middle():
+    if current_motion.motion_everywhere() or not current_motion.has_motion():
+        print("not moving")
+    elif current_motion.motion_in_middle():
         print("forward")
         movement.go_forward(1)
         time.sleep(0.5)
@@ -37,9 +39,6 @@ while True:
         movement.turn_right(1)
         time.sleep(0.2)
         movement.stop()
-    else:
-        print("no motion")
-        #time.sleep(0.2)
 
     #time.sleep(0.1)
 

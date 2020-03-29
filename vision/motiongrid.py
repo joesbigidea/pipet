@@ -35,6 +35,15 @@ class MotionCheckResult:
         return False
 
 
+    def motion_everywhere(self):
+        for row in self.motion_results:
+            for cell in row:
+                if not cell:
+                    return False
+
+        return True
+
+
     def has_motion(self):
         for row in self.motion_results:
             for cell in row:

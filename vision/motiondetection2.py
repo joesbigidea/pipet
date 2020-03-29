@@ -16,19 +16,21 @@ class MotionDetector:
         self._conf = SimpleNamespace()
         self._conf.camera_warmup_time = 10
         self._conf.delta_thresh = 5
-        self._conf.blur_size = [21, 21]
-        self._conf.resolution = [640, 480]
+        self._conf.blur_size = [11, 11]
+        self._conf.resolution = [320, 240]
         self._conf.fps = 30
-        self._conf.min_area = 5000
+        self._conf.min_area = 1000
         self._camera = PiCamera()
+        self._camera.exposure_mode = "fixedfps"
         self._camera.resolution = self._conf.resolution
         self._camera.framerate = self._conf.fps
         self._camera.rotation = 180
+    
         self._raw_capture = PiRGBArray(self._camera, size=tuple(self._conf.resolution))
         self._motion_detection_grid = MotionDetectionGrid(self._conf.resolution)
         time.sleep(self._conf.camera_warmup_time)
         print("Camera started")
-
+        
 
     def _capture_frame(self):
         self._raw_capture.truncate(0)
@@ -43,6 +45,7 @@ class MotionDetector:
         start = time.time()
 
         frame1 = self._capture_frame()
+
         frame2 = self._capture_frame()
 
         frameDelta = cv2.absdiff(frame2, cv2.convertScaleAbs(frame1))
