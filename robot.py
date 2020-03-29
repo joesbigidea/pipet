@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from vision import motiondetection
+from vision.motiondetection2 import MotionDetector
 from movement.movement import Movement
 
 import time
@@ -8,13 +9,16 @@ import time
 
 print(f"Starting robot")
 
-motiondetection.start_motion_detection()
+#motiondetection.start_motion_detection()
+motion_detector = MotionDetector()
+
 print(f"Motion detection started")
 
 movement = Movement()
 
 while True:
-    current_motion = motiondetection.get_current_motion()
+#    current_motion = motiondetection.get_current_motion()
+    current_motion = motion_detector.detect_motion()
 
     print(current_motion)
 
@@ -37,7 +41,7 @@ while True:
         print("no motion")
         #time.sleep(0.2)
 
-    time.sleep(1)
+    #time.sleep(0.1)
 
 movement.stop()
 motiondetection.stop_motion_detection()
