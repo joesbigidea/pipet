@@ -24,23 +24,25 @@ while True:
 
     if current_motion.motion_everywhere() or not current_motion.has_motion():
         print("not moving")
+        not_moving = True
     elif current_motion.motion_in_middle():
         print("forward")
         movement.go_forward(1)
-        time.sleep(0.5)
+        time.sleep(1)
         movement.stop()
     elif current_motion.motion_on_left():
         print("left")
         movement.turn_left(1)
-        time.sleep(0.2)
+        time.sleep(0.3)
         movement.stop()
     elif current_motion.motion_on_right():
         print("right")
         movement.turn_right(1)
-        time.sleep(0.2)
+        time.sleep(0.3)
         movement.stop()
 
-    #time.sleep(0.1)
+    if not not_moving:
+        time.sleep(0.2)
 
 movement.stop()
 motiondetection.stop_motion_detection()
