@@ -14,6 +14,8 @@ class MotionCheckResult:
 
         self.motion_results = motion_results
 
+    def motion_at(self, x, y):
+        return self.motion_results[y][x]
 
     def motion_on_left(self):
         return self.motion_in_column(0)
