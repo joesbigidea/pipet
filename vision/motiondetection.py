@@ -3,6 +3,7 @@ from picamera import PiCamera
 from vision.motiongrid import MotionCheckResult, MotionDetectionGrid
 from vision.boundingbox import BoundingBox
 from types import SimpleNamespace
+from status import status_reporting
 
 import threading
 import time
@@ -12,7 +13,7 @@ NO_MOTION = MotionCheckResult([ [ False for col in range(3)] for row in range(3)
 
 class MotionDetector:
 
-    def __init__(self, log):
+    def __init__(self):
         self._conf = SimpleNamespace()
         self._conf.camera_warmup_time = 10
         self._conf.delta_thresh = 5
@@ -29,7 +30,7 @@ class MotionDetector:
         self._raw_capture = PiRGBArray(self._camera, size=tuple(self._conf.resolution))
         self._motion_detection_grid = MotionDetectionGrid(self._conf.resolution)
         time.sleep(self._conf.camera_warmup_time)
-        log("Camera started")
+        status_reporting.log("Camera started")
         
 
     def _capture_frame(self):

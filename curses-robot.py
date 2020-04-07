@@ -3,6 +3,7 @@
 import curses
 from vision.motiongrid import MotionCheckResult
 from robot.robot import Robot
+from status import status_reporting
 
 class MotionWindow:
     
@@ -100,12 +101,13 @@ log_message(screen, "Starting...")
 
 screen.refresh()
 
+status_reporting.log = lambda mess : log_message(screen, mess)
+status_reporting.motion_listener = motion_window.update
+status_reporting.left_depth_listener = left_depth_window.update
+status_reporting.right_depth_listener = right_depth_window.update
+
 robot = Robot()
-robot.motion_listener = motion_window.update
 robot.quit_monitor = lambda : should_quit(screen)
-robot.log = lambda mess : log_message(screen, mess)
-robot.left_depth_listener = left_depth_window.update
-robot.right_depth_listener = right_depth_window.update
 robot.start()
 robot.run()
 
