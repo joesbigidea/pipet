@@ -52,15 +52,16 @@ class DepthWindow:
 
 
 class LogWindow:
-    def __init(self, screen, y, x):
-        self.window = screen.subwin(5, screen_width - 10, 15, 1)
+
+    def __init__(self, screen, y, x):
+        self.window = screen.subwin(5, screen_width - 10, y, x)
 
 
     def update(self, message):
         self.window.erase()
         self.window.border('|', '|', '-', '-')
         self.window.addstr(1, 1, "LOG")
-        self.window.addstr(2, 1, message)
+        self.window.addstr(2, 1, f"{message}")
         self.refresh()
 
     
@@ -73,14 +74,7 @@ def should_quit(screen):
         return 'q' == screen.getkey()
     except:
         return False
-
-
-def log_message(screen, message):
-    screen.addstr(8, 1, message)
-    screen.refresh()
-
-        
-
+       
 MOTION_WINDOW_HEIGHT = 6
 
 # The `screen` is a window that acts as the master window
@@ -97,14 +91,16 @@ screen_height, screen_width = screen.getmaxyx()
 motion_window = MotionWindow(screen)
 left_depth_window = DepthWindow(screen, "Left", 1, 1)
 right_depth_window = DepthWindow(screen, "Right", 1, 50)
-log_message(screen, "Starting...")
+log_window = LogWindow(screen, 10, 1)
 
-screen.refresh()
-
-status_reporting.log = lambda mess : log_message(screen, mess)
+status_reporting.log = log_window.update
 status_reporting.motion_listener = motion_window.update
 status_reporting.left_depth_listener = left_depth_window.update
 status_reporting.right_depth_listener = right_depth_window.update
+
+screen.refresh()
+
+status_reporting.log("Starting...")
 
 try:
     robot = Robot()

@@ -5,10 +5,9 @@ from vision.motiondetection import MotionDetector
 from movement.movement import Movement
 from depth import depthdetection
 from status import status_reporting
+from robot import behaviors
 
 import time
-
-OBSTRUCTION_DISTANCE = 20
 
 class Robot:
         
@@ -23,36 +22,34 @@ class Robot:
         self.left_depth_detector = depthdetection.build_left()
         self.right_depth_detector = depthdetection.build_right()        
         self.running = True
+        self.behaviors = [ behaviors.ChaseMotion(), behaviors.Wander() ]
+        self._current_behavior = None
+        self.behavior_index = -1
 
 
-    def chase_motion(self):
-        current_motion = self.motion_detector.detect_motion()
-    
-        if current_motion.has_motion() and not current_motion.motion_everywhere():            
-            if current_motion.motion_in_middle():
-                self.movement.go_forward(1, 1)
-            elif current_motion.motion_on_left():
-                self.movement.turn_left(1, 0.3)
-            elif current_motion.motion_on_right():
-                self.movement.turn_right(1, 0.3)
+    def run_updates(self):
+        self.movement.update()
 
 
-    def check_depth(self):
-        left_depth = self.left_depth_detector.get_dist_cm()
-        right_depth = self.right_depth_detector.get_dist_cm()
-
-        if left_depth < OBSTRUCTION_DISTANCE or right_depth < OBSTRUCTION_DISTANCE:
-            self.movement.stop()
+    def start_next_behavior(self):
+        self.behavior_index += 1
+        if self.behavior_index >= len(self.behaviors):
+            self.behavior_index = 0
+            
+        self._current_behavior = self.behaviors[self.behavior_index]
+        self._current_behavior.start_behavior(self)
 
 
     def run(self):
-        while self.running:
-            self.movement.update()
+        self.start_next_behavior()
 
-            if self.movement.is_moving:
-                self.check_depth()
-            else:
-                self.chase_motion()       
+        while self.running:
+            self.movement.update()            
+                
+            if self._current_behavior.behavior_finished(self):
+                self.start_next_behavior()
+
+            self._current_behavior.run_behavior(self)
 
             if self.quit_monitor():
                 self.stop()

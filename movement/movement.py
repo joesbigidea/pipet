@@ -11,6 +11,7 @@ class Movement:
         self._left = self._kit.continuous_servo[1]
         self._right = self._kit.continuous_servo[0]    
         self._stop_time = time.time()
+        self._state_start_time = time.time()
         self.stop()
     
 
@@ -18,6 +19,7 @@ class Movement:
         self._left.throttle = lspeed
         self._right.throttle = rspeed
         self._stop_time = time.time() + duration_seconds
+        self._state_start_time = time.time()
         self.is_moving = True
 
     
@@ -50,6 +52,7 @@ class Movement:
     def left_wheel(self, duration_seconds):
         self._go(1, 0, duration_seconds)
 
+
     def is_stopped(self):
         return self.is_moving
 
@@ -57,3 +60,7 @@ class Movement:
     def update(self):
         if self.is_moving and time.time() > self._stop_time:
             self.stop()
+
+
+    def state_elapsed_seconds(self):
+        return time.time() - self._state_start_time
