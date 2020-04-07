@@ -18,7 +18,6 @@ class Robot:
 
     def start(self):
         self.motion_detector = MotionDetector()
-        status_reporting.log("Motion detection started")
         self.movement = Movement()
         self.movement.stop()        
         self.left_depth_detector = depthdetection.build_left()
@@ -28,8 +27,7 @@ class Robot:
 
     def chase_motion(self):
         current_motion = self.motion_detector.detect_motion()
-        status_reporting.motion_listener(current_motion)
-
+    
         if current_motion.has_motion() and not current_motion.motion_everywhere():            
             if current_motion.motion_in_middle():
                 self.movement.go_forward(1, 1)
@@ -41,10 +39,7 @@ class Robot:
 
     def check_depth(self):
         left_depth = self.left_depth_detector.get_dist_cm()
-        status_reporting.left_depth_listener(left_depth)
-
         right_depth = self.right_depth_detector.get_dist_cm()
-        status_reporting.right_depth_listener(right_depth)
 
         if left_depth < OBSTRUCTION_DISTANCE or right_depth < OBSTRUCTION_DISTANCE:
             self.movement.stop()

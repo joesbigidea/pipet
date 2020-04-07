@@ -30,7 +30,7 @@ class MotionDetector:
         self._raw_capture = PiRGBArray(self._camera, size=tuple(self._conf.resolution))
         self._motion_detection_grid = MotionDetectionGrid(self._conf.resolution)
         time.sleep(self._conf.camera_warmup_time)
-        status_reporting.log("Camera started")
+        status_reporting.log("Motion detection started")
         
 
     def _capture_frame(self):
@@ -68,4 +68,6 @@ class MotionDetector:
             result = NO_MOTION
 
         end = time.time()
+
+        status_reporting.motion_listener(result)
         return result

@@ -106,13 +106,15 @@ status_reporting.motion_listener = motion_window.update
 status_reporting.left_depth_listener = left_depth_window.update
 status_reporting.right_depth_listener = right_depth_window.update
 
-robot = Robot()
-robot.quit_monitor = lambda : should_quit(screen)
-robot.start()
-robot.run()
+try:
+    robot = Robot()
+    robot.quit_monitor = lambda : should_quit(screen)
+    robot.start()
+    robot.run()
+finally:
+    curses.nocbreak()
+    screen.keypad(0)
+    curses.curs_set(1)
+    curses.echo()
+    curses.endwin()    
 
-curses.nocbreak()
-screen.keypad(0)
-curses.curs_set(1)
-curses.echo()
-curses.endwin()
