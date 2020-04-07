@@ -7,8 +7,10 @@ from depth import depthdetection
 
 import time
 
+OBSTRUCTION_DISTANCE = 20
+
 class Robot:
-    
+        
     def __init__(self):
         self.log = print
         self.motion_listener = lambda m : print(f"Motion: {m}")
@@ -19,47 +21,46 @@ class Robot:
 
     def start(self):
         self.motion_detector = MotionDetector(self.log)
-        self.movement = Movement()
         self.log(f"Motion detection started")
+        self.movement = Movement()
+        self.movement.stop()        
         self.left_depth_detector = depthdetection.build_left()
-        self.right_depth_detector = depthdetection.build_right()
+        self.right_depth_detector = depthdetection.build_right()        
         self.running = True
+
+
+    def chase_motion(self):
+        current_motion = self.motion_detector.detect_motion()
+        self.motion_listener(current_motion)
+
+        if current_motion.has_motion() and not current_motion.motion_everywhere():            
+            if current_motion.motion_in_middle():
+                self.movement.go_forward(1, 1)
+            elif current_motion.motion_on_left():
+                self.movement.turn_left(1, 0.3)
+            elif current_motion.motion_on_right():
+                self.movement.turn_right(1, 0.3)
+
+
+    def check_depth(self):
+        left_depth = self.left_depth_detector.get_dist_cm()
+        self.left_depth_listener(left_depth)
+
+        right_depth = self.right_depth_detector.get_dist_cm()
+        self.right_depth_listener(right_depth)
+
+        if left_depth < OBSTRUCTION_DISTANCE or right_depth < OBSTRUCTION_DISTANCE:
+            self.movement.stop()
 
 
     def run(self):
         while self.running:
-            current_motion = self.motion_detector.detect_motion()
-            self.motion_listener(current_motion)
+            self.movement.update()
 
-            left_depth = self.left_depth_detector.get_dist_cm()
-            self.left_depth_listener(left_depth)
-
-            right_depth = self.right_depth_detector.get_dist_cm()
-            self.right_depth_listener(right_depth)
-
-            not_moving = False
-
-            if current_motion.motion_everywhere() or not current_motion.has_motion():
-                self.log("not moving")
-                not_moving = True
-            elif current_motion.motion_in_middle():
-                self.log("forward")
-                self.movement.go_forward(1)
-                time.sleep(1)
-                self.movement.stop()
-            elif current_motion.motion_on_left():
-                self.log("left")
-                self.movement.turn_left(1)
-                time.sleep(0.3)
-                self.movement.stop()
-            elif current_motion.motion_on_right():
-                self.log("right")
-                self.movement.turn_right(1)
-                time.sleep(0.3)
-                self.movement.stop()
-
-            if not not_moving:
-                time.sleep(0.2)
+            if self.movement.is_moving:
+                self.check_depth()
+            else:
+                self.chase_motion()       
 
             if self.quit_monitor():
                 self.stop()

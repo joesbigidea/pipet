@@ -96,7 +96,7 @@ screen_height, screen_width = screen.getmaxyx()
 motion_window = MotionWindow(screen)
 left_depth_window = DepthWindow(screen, "Left", 1, 1)
 right_depth_window = DepthWindow(screen, "Right", 1, 50)
-log_message("Starting...")
+log_message(screen, "Starting...")
 
 screen.refresh()
 
