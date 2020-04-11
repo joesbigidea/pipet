@@ -2,6 +2,7 @@
 import board
 from adafruit_hcsr04 import HCSR04
 from status import status_reporting
+import time
 
 LEFT_DEPTH_SENSOR_TRIGGER = board.D5
 LEFT_DEPTH_SENSOR_ECHO = board.D6
@@ -11,16 +12,25 @@ RIGHT_DEPTH_SENSOR_ECHO = board.D18
 
 class DepthSensor:
 
+    _MEASURE_INTERVAL_SECONDS = 0.01
+
     def __init__(self, trigger, echo, listener):
         self._sensor = HCSR04(trigger, echo)
         self._listener = listener
+        self._previous_result = 0
+        self._previous_time = time.time() - self._MEASURE_INTERVAL_SECONDS
 
 
     def get_dist_cm(self):
+        current_time = time.time()
+        if current_time - self._previous_time < self._MEASURE_INTERVAL_SECONDS:
+            return self._previous_result
+
         try:
-            dist = self._sensor.distance
-            self._listener(dist)
-            return dist
+            self._previous_result = self._sensor.distance
+            self._previous_time = current_time
+            self._listener(self._previous_result)
+            return self._previous_result
         except RuntimeError:
             return -1
 
