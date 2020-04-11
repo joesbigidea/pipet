@@ -69,6 +69,27 @@ class LogWindow:
         self.window.refresh()
 
 
+class BehaviorWindow:
+
+    def __init__(self, screen):
+        WINDOW_HEIGHT = 4
+        WINDOW_WIDTH = 20
+        self.window = screen.subwin(WINDOW_HEIGHT, WINDOW_WIDTH, screen_height - (WINDOW_HEIGHT + 1), screen_width - (WINDOW_WIDTH + 1))
+        self.update("LOADING...")
+
+
+    def update(self, behavior):
+        self.window.erase()
+        self.window.border('|', '|', '-', '-')
+        self.window.addstr(1, 1, "BEHAVIOR")
+        self.window.addstr(2, 1, f"{behavior}")
+        self.refresh()
+
+    
+    def refresh(self):
+        self.window.refresh()
+
+
 def should_quit(screen):
     try:
         return 'q' == screen.getkey()
@@ -92,11 +113,13 @@ motion_window = MotionWindow(screen)
 left_depth_window = DepthWindow(screen, "Left", 1, 1)
 right_depth_window = DepthWindow(screen, "Right", 1, 50)
 log_window = LogWindow(screen, 10, 1)
+behavior_window = BehaviorWindow(screen)
 
 status_reporting.log = log_window.update
 status_reporting.motion_listener = motion_window.update
 status_reporting.left_depth_listener = left_depth_window.update
 status_reporting.right_depth_listener = right_depth_window.update
+status_reporting.behavior_listener = behavior_window.update
 
 screen.refresh()
 

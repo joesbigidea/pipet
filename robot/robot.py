@@ -22,34 +22,38 @@ class Robot:
         self.left_depth_detector = depthdetection.build_left()
         self.right_depth_detector = depthdetection.build_right()        
         self.running = True
-        self.behaviors = [ behaviors.ChaseMotion(), behaviors.Wander() ]
+        self.behaviors = [ behaviors.ChaseMotion(self), behaviors.Wander(self), behaviors.EscapeCorner(self) ]
         self._current_behavior = None
-        self.behavior_index = -1
 
 
     def run_updates(self):
         self.movement.update()
 
 
-    def start_next_behavior(self):
-        self.behavior_index += 1
-        if self.behavior_index >= len(self.behaviors):
-            self.behavior_index = 0
-            
-        self._current_behavior = self.behaviors[self.behavior_index]
-        self._current_behavior.start_behavior(self)
+    def update_behavior(self):
+        max_priority = -1
+        best_behavior = None
+        for behavior in self.behaviors:
+            priority = behavior.priority()
+            if priority > max_priority:
+                max_priority = priority
+                best_behavior = behavior
+
+        if best_behavior != self._current_behavior:
+            if self._current_behavior:
+                self._current_behavior.stop()
+            best_behavior.start()
+            self._current_behavior = best_behavior
+            status_reporting.behavior_listener(best_behavior.description)
 
 
     def run(self):
-        self.start_next_behavior()
-
         while self.running:
             self.movement.update()            
-                
-            if self._current_behavior.behavior_finished(self):
-                self.start_next_behavior()
 
-            self._current_behavior.run_behavior(self)
+            self.update_behavior()
+                
+            self._current_behavior.run()
 
             if self.quit_monitor():
                 self.stop()
