@@ -22,7 +22,7 @@ class Robot:
         self.left_depth_detector = depthdetection.build_left()
         self.right_depth_detector = depthdetection.build_right()        
         self.running = True
-        self.behaviors = [ behaviors.ChaseMotion(self), behaviors.Wander(self), behaviors.EscapeCorner(self) ]
+        self.behaviors = [ behaviors.ChaseMotion(self), behaviors.Wander(self), behaviors.AvoidObstacles(self) ]
         self._current_behavior = None
 
 

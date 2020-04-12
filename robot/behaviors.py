@@ -39,8 +39,6 @@ class ChaseMotion(Behavior):
 
     def __init__(self, robot):
         self.movement = robot.movement
-        self.left_depth = robot.left_depth_detector.get_dist_cm
-        self.right_depth = robot.right_depth_detector.get_dist_cm
         self.mode_stop = time.time() - self._REST_TIME
         super().__init__("Chase Motion", robot)
 
@@ -59,9 +57,7 @@ class ChaseMotion(Behavior):
 
 
     def run(self):
-        if self.movement.is_moving:
-            self.check_for_obstacles()
-        else:
+        if not self.movement.is_moving:
             self.chase_motion()
 
 
@@ -70,14 +66,6 @@ class ChaseMotion(Behavior):
             return 0
 
         return 10
-
-
-    def check_for_obstacles(self):
-        left_depth = self.left_depth()
-        right_depth = self.right_depth()
-
-        if left_depth < self._OBSTRUCTION_DISTANCE or right_depth < self._OBSTRUCTION_DISTANCE:
-            self.movement.stop()
 
 
     def chase_motion(self):
@@ -116,12 +104,7 @@ class Wander(Behavior):
 
 
     def run(self):
-        if self.robot.left_depth_detector.get_dist_cm() < self._WANDER_OBSTRUCTION_DISTANCE:
-            self.robot.movement.turn_right(1, 0.1)
-        elif self.robot.right_depth_detector.get_dist_cm() < self._WANDER_OBSTRUCTION_DISTANCE:
-            self.robot.movement.turn_left(1, 0.1)
-        else:
-            self.robot.movement.go_forward(1, 0.1)    
+        self.robot.movement.go_forward(1, 0.1)    
 
 
     def priority(self):
@@ -134,13 +117,13 @@ class Wander(Behavior):
         return max(min(BEHAVIOR_MAX_NORMAL_PRIORITY, result), 0)
 
 
-class EscapeCorner(Behavior):
+class AvoidObstacles(Behavior):
 
     _OBSTRUCTION_DISTANCE = 30
     _PRIORITY_SCALAR = (BEHAVIOR_MAX_EMERGENCY_PRIORITY - BEHAVIOR_MAX_NORMAL_PRIORITY) / _OBSTRUCTION_DISTANCE
 
     def __init__(self, robot):
-        super().__init__("Escape Corner", robot)
+        super().__init__("Avoid Obstacles", robot)
 
 
     def start(self):
@@ -153,27 +136,25 @@ class EscapeCorner(Behavior):
 
     def run(self):
         left, right = self._get_dist()
-        if left < right:
-            self.robot.movement.turn_left(1, 0.1)
-        else:
+        left_obstructed = left < self._OBSTRUCTION_DISTANCE
+        right_obstructed = right < self._OBSTRUCTION_DISTANCE
+
+        if left_obstructed:
             self.robot.movement.turn_right(1, 0.1)
+        else: 
+            self.robot.movement.turn_left(1, 0.1)
 
 
     def priority(self):
-        if not self._is_in_corner():
+        left, right = self._get_dist()
+        if left > self._OBSTRUCTION_DISTANCE and right > self._OBSTRUCTION_DISTANCE:
             return 0
 
-        left_dist, right_dist = self._get_dist()
 
-        dist_priority = (self._OBSTRUCTION_DISTANCE * 2 - (left_dist + right_dist)) * self._PRIORITY_SCALAR
+        dist = min(left, right)
+
+        dist_priority = (self._OBSTRUCTION_DISTANCE - (dist)) * self._PRIORITY_SCALAR
         return BEHAVIOR_MAX_NORMAL_PRIORITY + dist_priority
-
-
-    def _is_in_corner(self):
-        left, right = self._get_dist()
-
-        return left < self._OBSTRUCTION_DISTANCE and \
-            right < self._OBSTRUCTION_DISTANCE
 
     
     def _get_dist(self):
