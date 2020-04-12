@@ -5,6 +5,19 @@ from abc import ABC, abstractmethod
 BEHAVIOR_MAX_NORMAL_PRIORITY = 50
 BEHAVIOR_MAX_EMERGENCY_PRIORITY = 100
 
+def getPriorityForTime(start_time, stop_time, active_window_seconds, inactive_window_seconds, current_time = time.time()):
+    if start_time:
+        target_stop_time = start_time + active_window_seconds
+        time_remaining = target_stop_time - current_time
+        priority_scaler = BEHAVIOR_MAX_NORMAL_PRIORITY / active_window_seconds
+        return max(0, time_remaining * priority_scaler)
+    else:
+        target_start_time = stop_time + inactive_window_seconds
+        time_to_wait = target_start_time - current_time
+        priority_scaler = BEHAVIOR_MAX_NORMAL_PRIORITY / inactive_window_seconds
+        return min(BEHAVIOR_MAX_NORMAL_PRIORITY, BEHAVIOR_MAX_NORMAL_PRIORITY - (time_to_wait * priority_scaler))
+
+
 class Behavior(ABC):
 
     def __init__(self, description, robot):
