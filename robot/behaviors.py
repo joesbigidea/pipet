@@ -5,18 +5,6 @@ from abc import ABC, abstractmethod
 BEHAVIOR_MAX_NORMAL_PRIORITY = 50
 BEHAVIOR_MAX_EMERGENCY_PRIORITY = 100
 
-def getPriorityForTime(start_time, stop_time, active_window_seconds, inactive_window_seconds, current_time = time.time()):
-    if start_time:
-        target_stop_time = start_time + active_window_seconds
-        time_remaining = target_stop_time - current_time
-        priority_scaler = BEHAVIOR_MAX_NORMAL_PRIORITY / active_window_seconds
-        return max(0, time_remaining * priority_scaler)
-    else:
-        target_start_time = stop_time + inactive_window_seconds
-        time_to_wait = target_start_time - current_time
-        priority_scaler = BEHAVIOR_MAX_NORMAL_PRIORITY / inactive_window_seconds
-        return min(BEHAVIOR_MAX_NORMAL_PRIORITY, BEHAVIOR_MAX_NORMAL_PRIORITY - (time_to_wait * priority_scaler))
-
 
 class Behavior(ABC):
 
@@ -46,42 +34,61 @@ class Behavior(ABC):
         pass
 
 
-class ChaseMotion(Behavior):
-    _OBSTRUCTION_DISTANCE = 20
-    _REST_TIME = 30
+class TimedBehavior(Behavior):
 
-    def __init__(self, robot):
-        self.movement = robot.movement
-        self.mode_stop = time.time() - self._REST_TIME
-        super().__init__("Chase Motion", robot)
-
-
-    def behavior_finished(self, robot):
-        return robot.movement.state_elapsed_seconds() > 10
+    def __init__(self, description, robot, run_time, rest_time):
+        self.run_time = run_time
+        self.rest_time = rest_time
+        self.recovery_scalar = rest_time / run_time
+        self.time_remaining = run_time
+        self.last_priority_call = time.time()
+        self.running = False
+        self.mode_stop = time.time()
+        super().__init__(description, robot)
 
 
     def start(self):
         self.mode_start = time.time()
-        self.movement.stop()
+        self.mode_stop = None
+        self.running = True
+        if self.time_remaining == 0:
+            self.time_remaining = self.run_time
 
 
     def stop(self):
-        self.mode_stop = time.time()
+        self.mode_stop = time.time()       
+        self.running = False
+        
+
+    def priority(self):
+        if self.running:
+            current_time = time.time()
+            duration = current_time - self.last_priority_call
+            self.time_remaining = max(0, self.time_remaining - duration)
+            self.last_priority_call = current_time
+
+        if self.time_remaining > 0:
+            return BEHAVIOR_MAX_NORMAL_PRIORITY
+
+        if self.running:
+            return 0
+
+        target_start_time = self.mode_stop + self.rest_time
+        time_to_wait = target_start_time - time.time()
+        priority_scaler = BEHAVIOR_MAX_NORMAL_PRIORITY / self.rest_time
+        result = BEHAVIOR_MAX_NORMAL_PRIORITY - (time_to_wait * priority_scaler)
+        return max(0, min(BEHAVIOR_MAX_NORMAL_PRIORITY, result)) 
+
+
+class ChaseMotion(TimedBehavior):
+    
+    
+    def __init__(self, robot):
+        self.movement = robot.movement
+        super().__init__("Chase Motion", robot, 30, 60)
 
 
     def run(self):
-        if not self.movement.is_moving:
-            self.chase_motion()
-
-
-    def priority(self):
-        if time.time() - self.mode_stop < self._REST_TIME:
-            return 0
-
-        return 10
-
-
-    def chase_motion(self):
         current_motion = self.robot.motion_detector.detect_motion()
     
         if current_motion.has_motion() and not current_motion.motion_everywhere():            
@@ -93,41 +100,15 @@ class ChaseMotion(Behavior):
                 self.movement.turn_right(1, 0.3)
 
 
+class Wander(TimedBehavior):
 
-class Wander(Behavior):
-
-    _WANDER_OBSTRUCTION_DISTANCE = 30
-    _WANDER_TIME = 90
-    _PRIORITY_SCALAR = _WANDER_TIME / BEHAVIOR_MAX_NORMAL_PRIORITY 
 
     def __init__(self, robot):
-        self.mode_stop = time.time()
-        self.mode_start = None
-        super().__init__("Wander", robot)
-
-
-    def start(self):
-        self.mode_start = time.time()
-        self.mode_stop = None
-
-
-    def stop(self):
-        self.mode_stop = time.time()
-        self.mode_start = None
+        super().__init__("Wander", robot, 60, 30)
 
 
     def run(self):
         self.robot.movement.go_forward(1, 0.1)    
-
-
-    def priority(self):
-        current_time = time.time()
-        if self.mode_start:
-            result = (self._WANDER_TIME - (current_time - self.mode_start)) * self._PRIORITY_SCALAR
-        else:
-            result = (current_time - self.mode_stop) * self._PRIORITY_SCALAR
-
-        return max(min(BEHAVIOR_MAX_NORMAL_PRIORITY, result), 0)
 
 
 class AvoidObstacles(Behavior):
@@ -140,7 +121,11 @@ class AvoidObstacles(Behavior):
 
 
     def start(self):
-        pass
+        left, right = self._get_dist()
+        if left < right:
+            self.move = self.robot.movement.turn_right
+        else:
+            self.move = self.robot.movement.turn_left
 
 
     def stop(self):
@@ -148,21 +133,13 @@ class AvoidObstacles(Behavior):
 
 
     def run(self):
-        left, right = self._get_dist()
-        left_obstructed = left < self._OBSTRUCTION_DISTANCE
-        right_obstructed = right < self._OBSTRUCTION_DISTANCE
-
-        if left_obstructed:
-            self.robot.movement.turn_right(1, 0.1)
-        else: 
-            self.robot.movement.turn_left(1, 0.1)
+        self.move(1, 0.1)
 
 
     def priority(self):
         left, right = self._get_dist()
         if left > self._OBSTRUCTION_DISTANCE and right > self._OBSTRUCTION_DISTANCE:
             return 0
-
 
         dist = min(left, right)
 

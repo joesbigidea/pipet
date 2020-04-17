@@ -26,13 +26,16 @@ class DepthSensor:
         if current_time - self._previous_time < self._MEASURE_INTERVAL_SECONDS:
             return self._previous_result
 
-        try:
-            self._previous_result = self._sensor.distance
-            self._previous_time = current_time
-            self._listener(self._previous_result)
-            return self._previous_result
-        except RuntimeError:
-            return -1
+        for i in range(0, 5):
+            try:
+                self._previous_result = self._sensor.distance
+                self._previous_time = current_time
+                self._listener(self._previous_result)
+                return self._previous_result
+            except RuntimeError:
+                pass
+
+        return self._previous_result
 
 
 def build_left():

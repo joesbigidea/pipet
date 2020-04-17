@@ -33,11 +33,15 @@ class Robot:
     def update_behavior(self):
         max_priority = -1
         best_behavior = None
+        priorities = ""
         for behavior in self.behaviors:
             priority = behavior.priority()
+            priorities += f"Behavior {behavior.description} Priority: {priority} "
             if priority > max_priority:
                 max_priority = priority
                 best_behavior = behavior
+
+        status_reporting.log(priorities)
 
         if best_behavior != self._current_behavior:
             if self._current_behavior:
